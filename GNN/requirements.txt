@@ -1,0 +1,9 @@
+torch
+torch_geometric
+matplotlib
+joblib
+optuna
+neuralogic~=0.7.9
+scikit-learn
+pandas
+seaborn
