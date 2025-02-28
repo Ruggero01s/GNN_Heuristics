@@ -162,7 +162,8 @@ class CustomHeuristic:
 
         with torch.no_grad():
             value = self.trained_model(data).item()
-            scaled_value = value*(self.max_label-self.min_label) + self.min_label
+            scaled_value = value*(self.max_label-self.min_label) + self.min_label 
+            # The scaling implies that the inferred heuristic can at maximum reach the max euristic label found in training 
             # print(f"Valore norm:{value}")
             # print(f"Valore scalato:{value}")
             return scaled_value
