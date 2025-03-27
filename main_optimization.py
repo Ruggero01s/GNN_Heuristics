@@ -59,7 +59,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # PARAMETRI DEL DOMINIO:
 # vanno scaricati i dati da googledrive (https://drive.google.com/drive/folders/1FuPe1SWMC1hsNclDn-HTr9G_HFYWOxll) e messi nella cartella data
-domain = "logistics"
+domain = "blocks"
 domain_folder = (
     domain_folder_root + domain + "/"
 )  # Percorso in cui sono memroizzati i plan.txt del dominio
@@ -71,7 +71,7 @@ objective_names = {
     "GENModel": objective_GENModel,
     "GATModel": objective_GAT,
 }
-trials = {"GENModel": 100, "GINEModel": 100, "GATModel": 1}
+trials = {"GENModel": 5, "GINEModel": 5, "GATModel": 1}
 
 
 if __name__ == "__main__":
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 tensor_dataset, num_edge_features
             )
 
-            #TODO leakeage of test data in train??
+            #TODO leakeage of test data in train (min-max labels)??
             # add_custom label and min/max value of the label in order to be able to transform prediction to original label
             min_label = np.min(labels)
             max_label = np.max(labels)
