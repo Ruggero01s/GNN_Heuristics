@@ -9,11 +9,11 @@ from torch_geometric.utils import sort_edge_index
 
 
 
-class GINEModel(torch.nn.Module):
-    def __init__(self, node_in_dim, hidden_dim, output_dim, fc_hidden_dim, 
-                 num_edge_features, readout, dropout_rate, training,
-                 max_num_elements_mlp=0, hidden_channels_mlp=0, num_layers_mlp=0):
-        from torch_geometric.nn.aggr import MLPAggregation
+# class GINEModel(torch.nn.Module):
+#     def __init__(self, node_in_dim, hidden_dim, output_dim, fc_hidden_dim, 
+#                  num_edge_features, readout, dropout_rate, training,
+#                  max_num_elements_mlp=0, hidden_channels_mlp=0, num_layers_mlp=0):
+#         from torch_geometric.nn.aggr import MLPAggregation
 
 class GINEModel(torch.nn.Module):
     def __init__(self, node_in_dim, hidden_dim, output_dim, fc_hidden_dim, 
@@ -95,7 +95,7 @@ class GINEModel(torch.nn.Module):
 class GENModel(torch.nn.Module):
     def __init__(self, node_in_dim, hidden_dim, output_dim, hidden_layers, fc_hidden_dim, 
                  num_edge_features, aggregation_function, readout, dropout_rate, training, 
-                 max_num_elements_mlp=0, hidden_channels_mlp=0, num_layers_mlp=0):
+                 max_num_elements_mlp=0, hidden_channels_mlp=0, num_layers_mlp=0, hidden_channels_mlp_readout=0, num_layers_mlp_readout=0):
         super(GENModel, self).__init__()
         # TOMOD attentional
         self.edge_transform = nn.Linear(num_edge_features, hidden_dim)
@@ -113,6 +113,15 @@ class GENModel(torch.nn.Module):
             "max": global_max_pool
         }
 
+        if self.readout == 'mlp':
+            self.readout_funcs['mlp'] = MLPAggregation(
+                in_channels=hidden_dim,
+                hidden_channels=hidden_channels_mlp_readout,
+                max_num_elements=max_num_elements_mlp,
+                out_channels=hidden_dim,
+                num_layers=num_layers_mlp_readout,
+            )
+        
         kwargs = {}
         if aggregation_function == "softmax":
             kwargs['learn_t'] = True

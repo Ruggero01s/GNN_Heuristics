@@ -1,0 +1,9 @@
+Quello che stanno testando è non se i grafi risultanti dagli encoding siano uguali, quello che vogliono vedere è come ogni architettura reagisce ai loro encoding, perchè ogni architettura, tramite le sue trasformazioni può aggregare i dati iniziali (che erano magari diversi anche dopo l'encoding) in modo che arrivino alla stessa predizione. Quindi non è che gli stati una volta encodati collassano nello stesso grafo, (può succedere ma non è main focus) quello che gli interessava capire è la potenzialità di ogni architettura di distinguire due stati una volta encodati, in varie forme.
+
+Due reti possono quindi avere risultati diversi nella tabella perchè elaborando i grafi diversamente possono arrivare a considerarne alcuni uguali e altri no. Non è tanto l'encoding che provoca i conflitti (o meglio non solo) ma è anche l'interpretazione dell'encoding da parte di ogni rete. 
+
+Quindi partendo da stati diversi si può arrivare a grafi diversi ma che una volta elaborati da una data rete possono arrivare alla stessa conclusione, mentre da un'altra rete arrivare a valori diversi e quindi essere distinti.
+
+Si può vedere il tutto come un "encoding task" con il numero di stati collassati dopo l'aggregazione come metrica o punteggio. 
+
+Almeno questo è come ho capito il senso della tabella.

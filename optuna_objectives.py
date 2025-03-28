@@ -96,16 +96,19 @@ def objective_GENModel(trial, train_dataset, verbose=0, max_degree = -1):
     HIDDEN_LAYERS = trial.suggest_int("hidden_layers",1,3)
     READOUT = trial.suggest_categorical("readout", ['mean', 'max', 'add'])
     #TOMOD
-    #AGGREGATION_FUNCTION = trial.suggest_categorical("aggregation_function", ['mean', 'max', 'sum', 'softmax' ]) #(powermean, mul) genera errori (input contains NaN), forse dovuto a sigmoid 
+    AGGREGATION_FUNCTION = trial.suggest_categorical("aggregation_function", ['mean', 'max', 'sum', 'softmax', 'mlp' ]) #(powermean, mul) genera errori (input contains NaN), forse dovuto a sigmoid 
     #median gives cuda indexing error
     #AGGREGATION_FUNCTION = trial.suggest_categorical("aggregation_function", ['mlp'])
-    AGGREGATION_FUNCTION = trial.suggest_categorical("aggregation_function", ['mlp'])
-    #
-
+    
     #TOMOD MLP/Attentional
     MAX_NUM_ELEMENTS_MLP = max_degree # max degree of node in dataset
     HIDDEN_CHANNELS_MLP = trial.suggest_int("hidden_channels_mlp", 16,64, step=8)
     NUM_LAYERS_MLP = trial.suggest_int("num_layers_mlp", 2,6, step=2)
+    #
+    #TOMOD MLP/Attentional
+    # MAX_NUM_ELEMENTS_MLP = max_degree # max degree of node in dataset
+    # HIDDEN_CHANNELS_MLP_READOUT = trial.suggest_int("hidden_channels_mlp_readout", 16,64, step=8)
+    # NUM_LAYERS_MLP_READOUT = trial.suggest_int("num_layers_mlp_readout", 2,6, step=2)
     #
     LR = trial.suggest_float("lr",0.00001,0.1)
     DROPOUT_RATE = trial.suggest_float("dropout_rate",0.1,0.5)
@@ -158,6 +161,10 @@ def objective_GENModel(trial, train_dataset, verbose=0, max_degree = -1):
                          max_num_elements_mlp=MAX_NUM_ELEMENTS_MLP,
                          hidden_channels_mlp=HIDDEN_CHANNELS_MLP,
                          num_layers_mlp=NUM_LAYERS_MLP,
+                         #
+                         #TOMOD
+                        #  hidden_channels_mlp_readout=HIDDEN_CHANNELS_MLP_READOUT,
+                        #  num_layers_mlp_readout=NUM_LAYERS_MLP_READOUT,
                          #
                          readout=READOUT,
                          dropout_rate=DROPOUT_RATE,
