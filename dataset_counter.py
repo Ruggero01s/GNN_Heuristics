@@ -21,7 +21,7 @@ def traverse_and_count(folder, target_line):
 
 def main():
     # Hardcoded variables: change these as needed
-    folder = "GNN_Heuristics/data/sokoban"  # Directory to search
+    folder = "./data/sokoban"  # Directory to search
     target_line = "END_LABELED_STATE"  # Change this to the line you want to count
 
     total = traverse_and_count(folder, target_line)

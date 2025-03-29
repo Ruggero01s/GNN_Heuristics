@@ -112,14 +112,15 @@ if __name__ == "__main__":
     # Sfrutto la funzione get_datasets() del codice del paper per rappresentare il piano tramite un grafo
     # Il grafo è indipendente dalla tipologia di encoding.
     instances = get_datasets(domain_folder, descending=False)
-    
+    print(f"Number of instances: {len(instances)}")
     for encoding in encodings_list:
         print(
             f"==============================Starting {encoding} encoding ========================="
         )
         # PREPROCESSING
         data_list = []
-        for instance in instances:  # An instance is a PlanningDataset obj
+        for i, instance in enumerate(instances):  # An instance is a PlanningDataset obj
+            #print(f"Processing instance: {i}")
             samples = instance.get_samples(
                 eval(encoding)
             )  # samples are the states of a PlanningDataset
@@ -160,6 +161,8 @@ if __name__ == "__main__":
                 encoding_results[encoding][i]["label"] = labels[i]
                 encoding_results[encoding][i]["norm_label"] = norm_labels[i]
                 encoding_results[encoding][i]["data"] = tensor_dataset[i]
+            
+            
 
             # CHECK PREPROCESSING CORRECTNESS
         features = data_list[0].num_features
@@ -211,6 +214,9 @@ if __name__ == "__main__":
 
         # OPTIMIZE  "GENModel", "GINEModel", "GATModel"
         for model_type in models:
+            print("--> Starting " + model_type + " optimization with encoding: " + encoding)
+            if trials[model_type] == 0:
+                continue
             optuna_model_path = f"./optuna/{encoding}/{domain.upper()}/"
             optuna_images_path = f"./optuna/{encoding}/{domain.upper()}/images/"
             os.makedirs(optuna_model_path, exist_ok=True)
@@ -237,7 +243,7 @@ if __name__ == "__main__":
                     trial, train_list, verbose=0, max_degree=max_degree
                 ),
                 n_trials=trials[model_type],
-                n_jobs=2,
+                n_jobs=1,
             )
 
             best_trial = study.best_trial
@@ -440,7 +446,7 @@ if __name__ == "__main__":
 
     # Istogrammi relativi alle predizioni (normalizzate) di ogni coppia encoding-modello
     # Molto utile per capire se alcune coppie non funzionano come previsto
-    fig, ax = plt.subplots(3, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(len(encodings_list), len(models), figsize=(16, 16))
     row = 0
     for encoding in encodings_list:
         df = pd.read_csv(predictions_folder + f"{encoding}.csv", sep=";")
@@ -455,7 +461,7 @@ if __name__ == "__main__":
 
     # Scatter plot delle predizioni rispetto alle label (normalizzate).
     # utile per capire se il modello è buono (in questo caso avremo i punti distribuiti sulla retta y=x)
-    fig, ax = plt.subplots(3, 3, figsize=(16, 16))
+    fig, ax = plt.subplots(len(encodings_list), len(models), figsize=(16, 16))
     row = 0
     for encoding in encodings_list:
         df = pd.read_csv(predictions_folder + f"{encoding}.csv", sep=";")

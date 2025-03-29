@@ -1,0 +1,4 @@
+Sokoban dataset states: 3370
+ObjectPair2ObjectPair is clearly exponential growth in nodes and edges.
+
+

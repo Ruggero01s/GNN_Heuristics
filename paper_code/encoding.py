@@ -806,3 +806,178 @@ class Atom2AtomHigherOrderGraph(Atom2AtomGraph, ObjectPair2ObjectPairGraph):
         return edge_types
 
 # todo - design an ultimate object-object-atom-atom encoding
+
+
+import math
+class HierarchicalGridGraph(Graph):
+    """
+    Hierarchical encoding for grid domains.
+    
+    This class creates a two-level representation:
+      - Level 1: Each grid cell becomes a node with its features.
+      - Level 2: Each block (e.g. k x k group of cells) becomes a node whose feature
+               is the aggregated (e.g. averaged) features of its cells.
+      - Bipartite edges connect each cell node to its block node.
+    """
+    
+    def __init__(self, state, block_size=4, neighbor_mode='4'):
+        """
+        :param state: PlanningState that has an attribute 'grid', a 2D list (rows x cols)
+                      where each entry is an Object representing a cell.
+        :param block_size: The size of the block (assumed square) to aggregate.
+        :param neighbor_mode: '4' for 4-connected or '8' for 8-connected connectivity among cells.
+        """
+        super().__init__(state)
+        self.block_size = block_size
+        self.neighbor_mode = neighbor_mode
+        # These will store nodes and features for two types
+        self.cell_nodes = {}    # mapping cell (i,j) -> feature vector
+        self.block_nodes = {}   # mapping block id (bi, bj) -> aggregated feature vector
+        self.cell_node2index = {}
+        self.block_node2index = {}
+        # We will collect edges for three graphs: cell-cell, block-block, and cell-block bipartite
+        self.cell_cell_edges = []    # edges between cells (local grid connectivity)
+        self.block_block_edges = []  # edges between block nodes (adjacent blocks)
+        self.cell_block_edges = []   # bipartite edges: cell -> block (and optionally block -> cell)
+    
+    def load_nodes(self, include_types=True):
+        """
+        Loads low-level cell nodes and high-level block nodes.
+        We assume that state.grid is a 2D list of cell objects.
+        Each cell is expected to have a 'pos' attribute (tuple (row, col))
+        and a list of properties.
+        """
+        grid = self.state.grid  # assume grid is available: list of lists of cell objects
+        n_rows = len(grid)
+        n_cols = len(grid[0])
+        # First, create cell nodes.
+        cell_feature_names = self.object_feature_names(include_nullary=False)
+        cell_index = 0
+        for i in range(n_rows):
+            for j in range(n_cols):
+                cell = grid[i][j]
+                # Here we assume each cell object has properties accessible in state.object_properties:
+                # For example, state.object_properties[cell] could be a list of Predicate objects.
+                properties = self.state.object_properties.get(cell, [])
+                feature_vector = multi_hot_object(properties, cell_feature_names)
+                # Optionally, add normalized position information:
+                pos_feat = [i / n_rows, j / n_cols]
+                feature_vector += pos_feat
+                
+                self.cell_nodes[(i, j)] = feature_vector
+                self.cell_node2index[(i, j)] = cell_index
+                cell_index += 1
+        
+        # Then, aggregate cells into blocks.
+        block_index = 0
+        for bi in range(0, n_rows, self.block_size):
+            for bj in range(0, n_cols, self.block_size):
+                block_cells = []
+                # Determine block boundaries.
+                for i in range(bi, min(bi + self.block_size, n_rows)):
+                    for j in range(bj, min(bj + self.block_size, n_cols)):
+                        block_cells.append(self.cell_nodes[(i, j)])
+                # Aggregate features – here we take the average.
+                if block_cells:
+                    agg_feat = [sum(feats)/len(block_cells) for feats in zip(*block_cells)]
+                else:
+                    agg_feat = []
+                # Optionally, add block-level positional information (center of block)
+                center_i = bi + min(self.block_size, n_rows - bi) / 2.0
+                center_j = bj + min(self.block_size, n_cols - bj) / 2.0
+                agg_feat += [center_i / n_rows, center_j / n_cols]
+                
+                block_id = (bi // self.block_size, bj // self.block_size)
+                self.block_nodes[block_id] = agg_feat
+                self.block_node2index[block_id] = block_index
+                block_index += 1
+
+    def load_edges(self, include_types=True):
+        """
+        Create three types of edges:
+         1. Between adjacent cell nodes (using neighbor_mode).
+         2. Between adjacent block nodes.
+         3. Bipartite edges connecting each cell node to its corresponding block node.
+        """
+        # (1) Cell-cell edges: iterate over grid cells and connect to neighbors.
+        #todo must build grid from the state
+        
+        grid = self.state.grid 
+        n_rows = len(grid)
+        n_cols = len(grid[0])
+        neighbor_offsets = [(-1,0), (1,0), (0,-1), (0,1)] if self.neighbor_mode=='4' else \
+                           [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+        for i in range(n_rows):
+            for j in range(n_cols):
+                for di, dj in neighbor_offsets:
+                    ni, nj = i+di, j+dj
+                    if 0 <= ni < n_rows and 0 <= nj < n_cols:
+                        self.cell_cell_edges.append(((i, j), (ni, nj)))
+                        
+        # (2) Block-block edges: connect blocks that are adjacent in the block grid.
+        n_block_rows = math.ceil(n_rows / self.block_size)
+        n_block_cols = math.ceil(n_cols / self.block_size)
+        for bi in range(n_block_rows):
+            for bj in range(n_block_cols):
+                for di, dj in [(-1,0), (1,0), (0,-1), (0,1)]:
+                    nbi, nbj = bi + di, bj + dj
+                    if 0 <= nbi < n_block_rows and 0 <= nbj < n_block_cols:
+                        self.block_block_edges.append(((bi, bj), (nbi, nbj)))
+                        
+        # (3) Bipartite edges: for each cell, compute its block id and add an edge.
+        for i in range(n_rows):
+            for j in range(n_cols):
+                block_id = (i // self.block_size, j // self.block_size)
+                self.cell_block_edges.append(((i, j), block_id))
+                # Optionally, you could add the reverse edge if desired.
+
+    def to_hetero_tensors(self) -> HeteroData:
+        """
+        Create a HeteroData object with two node types: 'cell' and 'block'.
+        Also, add three types of edges: 'cell-cell', 'block-block', and 'cell_to_block'.
+        """
+        data = HeteroData()
+        # Add cell nodes.
+        cell_features = []
+        for key in sorted(self.cell_node2index, key=lambda x: self.cell_node2index[x]):
+            cell_features.append(self.cell_nodes[key])
+        data['cell'].x = torch.tensor(cell_features, dtype=torch.float)
+        
+        # Add block nodes.
+        block_features = []
+        for key in sorted(self.block_node2index, key=lambda x: self.block_node2index[x]):
+            block_features.append(self.block_nodes[key])
+        data['block'].x = torch.tensor(block_features, dtype=torch.float)
+        
+        # Add cell-cell edges.
+        cell_cell_edge_index = [[], []]
+        for (src, dst) in self.cell_cell_edges:
+            src_idx = self.cell_node2index[src]
+            dst_idx = self.cell_node2index[dst]
+            cell_cell_edge_index[0].append(src_idx)
+            cell_cell_edge_index[1].append(dst_idx)
+        data['cell', 'cell_conn', 'cell'].edge_index = torch.tensor(cell_cell_edge_index, dtype=torch.long)
+        
+        # Add block-block edges.
+        block_block_edge_index = [[], []]
+        for (src, dst) in self.block_block_edges:
+            src_idx = self.block_node2index[src]
+            dst_idx = self.block_node2index[dst]
+            block_block_edge_index[0].append(src_idx)
+            block_block_edge_index[1].append(dst_idx)
+        data['block', 'block_conn', 'block'].edge_index = torch.tensor(block_block_edge_index, dtype=torch.long)
+        
+        # Add bipartite edges: from cell to block.
+        cell_block_edge_index = [[], []]
+        for (cell_coord, block_id) in self.cell_block_edges:
+            src_idx = self.cell_node2index[cell_coord]
+            dst_idx = self.block_node2index[block_id]
+            cell_block_edge_index[0].append(src_idx)
+            cell_block_edge_index[1].append(dst_idx)
+        data['cell', 'belongs_to', 'block'].edge_index = torch.tensor(cell_block_edge_index, dtype=torch.long)
+        
+        return data
+
+    def to_tensors(self):
+        # For compatibility, we simply call the hetero version.
+        return self.to_hetero_tensors()
