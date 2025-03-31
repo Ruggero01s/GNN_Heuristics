@@ -7,6 +7,7 @@ from paper_code.encoding import (
     ObjectPair2ObjectPairGraph,
     Atom2AtomHigherOrderGraph,
     Atom2AtomMultiGraph,
+    HierarchicalGridGraph,
 )
 from paper_code.modelsTorch import get_compatible_model, get_tensor_dataset
 
@@ -243,7 +244,7 @@ if __name__ == "__main__":
                     trial, train_list, verbose=0, max_degree=max_degree
                 ),
                 n_trials=trials[model_type],
-                n_jobs=1,
+                n_jobs=-1,
             )
 
             best_trial = study.best_trial
@@ -357,9 +358,9 @@ if __name__ == "__main__":
                     heads=best_trial.params["heads"],
                     training=False,
                     # TOMOD
-                    # max_num_elements_mlp=max_degree,
-                    # hidden_channels_mlp=best_trial.params["hidden_channels_mlp"],
-                    # num_layers_mlp=best_trial.params["num_layers_mlp"],
+                    #max_num_elements_mlp=max_degree,
+                    #hidden_channels_mlp=best_trial.params["hidden_channels_mlp"],
+                    #num_layers_mlp=best_trial.params["num_layers_mlp"],
                     #
                 ).to(device)
             optimizer = torch.optim.Adam(model.parameters(), lr=best_trial.params["lr"])
@@ -405,14 +406,17 @@ if __name__ == "__main__":
     labels = encodings_list
     predictions_GEN = []
     predictions_GINE = []
+    predictions_GAT = []
     # populate predictions list
     for encoding in labels:
         predictions_GEN.append(results[encoding]["GENModel"])
         predictions_GINE.append(results[encoding]["GINEModel"])
+        predictions_GAT.append(results[encoding]["GATModel"])
     # plot
     fig, ax = plt.subplots(figsize=(12, 8))
     x = np.arange(len(labels))
     width = 0.25
+    bar1 = ax.bar(x - width, predictions_GAT, width, label="GAT")
     bar2 = ax.bar(x, predictions_GEN, width, label="GEN")
     bar3 = ax.bar(x + width, predictions_GINE, width, label="GINE")
     ax.set_xlabel("Encoding Type")
@@ -439,6 +443,7 @@ if __name__ == "__main__":
             )
 
     # Apply autolabel to each set of bars
+    autolabel(bar1)
     autolabel(bar2)
     autolabel(bar3)
     # save
@@ -528,3 +533,8 @@ ax.legend()
 
 plt.tight_layout()
 plt.savefig(result_analysis_folder + date_time + "_encoding sizes.png")
+
+# Save the encoding sizes DataFrame to a CSV file
+csv_filename = os.path.join(result_analysis_folder, f"encoding_sizes_{date_time.replace(';', '_').replace(':', '-')}.csv")
+df_enc.to_csv(csv_filename, index=False)
+print(f"Encoding sizes CSV saved at: {csv_filename}")

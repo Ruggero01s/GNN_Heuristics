@@ -1,4 +1,11 @@
 Sokoban dataset states: 3370
 ObjectPair2ObjectPair is clearly exponential growth in nodes and edges.
 
+Tried multigraph and higher order variants of presented encodings
 
+GINE is hopeless... why?
+
+Checked example of GNN used in planning:
+https://www.sciencedirect.com/science/article/pii/S2667379724000056 - GNN assisted collision checking
+
+Trying to check gat too

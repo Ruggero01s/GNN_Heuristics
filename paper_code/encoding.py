@@ -822,11 +822,32 @@ class HierarchicalGridGraph(Graph):
     
     def __init__(self, state, block_size=4, neighbor_mode='4'):
         """
-        :param state: PlanningState that has an attribute 'grid', a 2D list (rows x cols)
-                      where each entry is an Object representing a cell.
+        :param state: PlanningState that has an attribute 'object_properties', a dictionary mapping
+                  each Object to its properties. The positions of the objects (cells) are inferred
+                  from their names or attributes.
         :param block_size: The size of the block (assumed square) to aggregate.
         :param neighbor_mode: '4' for 4-connected or '8' for 8-connected connectivity among cells.
         """
+        # Infer the grid from the object properties
+        objects = list(state.object_properties.keys())
+        positions = [obj.pos for obj in objects if hasattr(obj, 'pos')]
+
+        if not positions:
+            raise ValueError("Objects in the PlanningState must have a 'pos' attribute to infer the grid.")
+
+        # Determine grid dimensions
+        max_row = max(pos[0] for pos in positions) + 1
+        max_col = max(pos[1] for pos in positions) + 1
+
+        # Initialize the grid as a 2D list
+        grid = [[None for _ in range(max_col)] for _ in range(max_row)]
+        for obj in objects:
+            if hasattr(obj, 'pos'):
+                row, col = obj.pos
+                grid[row][col] = obj
+
+        # Assign the inferred grid to the state
+        state.grid = grid
         super().__init__(state)
         self.block_size = block_size
         self.neighbor_mode = neighbor_mode
