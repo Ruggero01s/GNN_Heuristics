@@ -1,11 +1,28 @@
 Sokoban dataset states: 3370
 ObjectPair2ObjectPair is clearly exponential growth in nodes and edges.
+Cannot fit in GPU. Normal size in GPU is about 450MB, object pair does not fit, could try using very very small batches?
 
-Tried multigraph and higher order variants of presented encodings
+Tried multigraph and higher order variants of presented encodings, behavior is in line with previous tests
 
 GINE is hopeless... why?
+
+Trying to check GAT too: it works about as well as GEN, GEN is still slightly better, GAT doesn't like O2A encodings
+
+Seems that A2A and it's variants (multigraph and higher order) are the best, multigraph is a bit better on goal states
+Multigraph is having the features on different edge objects instead of stacking on the same (base version).
+But why doesn't this show from the encoding_study.py graph? 
+
+Higher order i think means that edges(relations) can involve more than 2 nodes, this is done using (if i have understood correctly) object pairs, how does this not encounter scaling problems like objectPair? does it only generate tuples it needs?
+But why doesn't this show from the encoding_study.py graph? 
+
+Only thing that changes between the three is edge features (3 base in line with maximum arity, 6 multi, 5 higher)
+
+
+https://github.com/GraphPKU/PygHO library for higher order GNN, have a look? https://graphpku.github.io/PyGHO_doc/index.html
+But they seem to have the same scalability problems as ObjectPair2ObjectPair as they work with tuples of k nodes
 
 Checked example of GNN used in planning:
 https://www.sciencedirect.com/science/article/pii/S2667379724000056 - GNN assisted collision checking
 
-Trying to check gat too
+
+

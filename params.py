@@ -8,8 +8,6 @@ encodings_list = [
      "Atom2AtomMultiGraph",
      "Atom2AtomHigherOrderGraph",
     #"ObjectPair2ObjectPairGraph",
-    #"HierarchicalGridGraph",
-
 ]  # List of different Encodings to use
 # encodings_list = ["ObjectPair2ObjectPairGraph"]
 
@@ -23,7 +21,7 @@ domain_folder = (
 
 # Dizionari che specificano per ogni tipologia di encoding il relativo objective e il numero di trials di optuna
 # (in questo modo posso dare n_trials diversi per tipologia di encoding)
-trials = {"GENModel": 50, "GINEModel": 50, "GATModel": 100}
+trials = {"GENModel": 50, "GINEModel": 0, "GATModel": 100}
 models = ["GENModel", "GINEModel", "GATModel"]  # Models to use for the encoding
 result_analysis_folder = f"./results_analysis/{domain.upper()}/"
 predictions_folder = predictions_folder_root + domain.upper() + "/"

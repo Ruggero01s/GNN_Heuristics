@@ -7,7 +7,6 @@ from paper_code.encoding import (
     ObjectPair2ObjectPairGraph,
     Atom2AtomHigherOrderGraph,
     Atom2AtomMultiGraph,
-    HierarchicalGridGraph,
 )
 from paper_code.modelsTorch import get_compatible_model, get_tensor_dataset
 
@@ -150,18 +149,33 @@ if __name__ == "__main__":
             data_list.extend(tensor_dataset)
             
             
-            if encoding not in encoding_results:
-                encoding_results[encoding] = {}
-            
+            rows = []
             for i, sample in enumerate(samples):
-                if encoding not in encoding_results:
-                    encoding_results[encoding] = {}
-                if i not in encoding_results[encoding]:
-                    encoding_results[encoding][i] = {}
-                encoding_results[encoding][i]["string"] = str(sample)
-                encoding_results[encoding][i]["label"] = labels[i]
-                encoding_results[encoding][i]["norm_label"] = norm_labels[i]
-                encoding_results[encoding][i]["data"] = tensor_dataset[i]
+                row = {
+                    "encoding": encoding,
+                    "sample_index": i,
+                    "label": labels[i],
+                    "norm_label": norm_labels[i],
+                    "data": tensor_dataset[i],
+                    "x_size": list(tensor_dataset[i].x.size())
+                    if tensor_dataset[i].x is not None
+                    else None,
+                    "edge_attr_size": list(tensor_dataset[i].edge_attr.size())
+                    if tensor_dataset[i].edge_attr is not None
+                    else None,
+                    "edge_index_size": list(tensor_dataset[i].edge_index.size())
+                    if tensor_dataset[i].edge_index is not None
+                    else None,
+                }
+                rows.append(row)
+
+                    # Create a DataFrame from the collected rows
+            encoding_df = pd.DataFrame(rows)
+
+            # Store the DataFrame in encoding_results for later use
+            if "encoding_results" not in globals():
+                encoding_results = {}
+            encoding_results[encoding] = encoding_df
             
             
 
@@ -409,9 +423,13 @@ if __name__ == "__main__":
     predictions_GAT = []
     # populate predictions list
     for encoding in labels:
-        predictions_GEN.append(results[encoding]["GENModel"])
-        predictions_GINE.append(results[encoding]["GINEModel"])
-        predictions_GAT.append(results[encoding]["GATModel"])
+        for model in models:
+            if model == "GENModel":
+                predictions_GEN.append(results[encoding]["GENModel"])
+            if model == "GINEModel":
+                predictions_GINE.append(results[encoding]["GINEModel"])
+            if model == "GATModel":
+                predictions_GAT.append(results[encoding]["GATModel"])
     # plot
     fig, ax = plt.subplots(figsize=(12, 8))
     x = np.arange(len(labels))
@@ -481,60 +499,65 @@ if __name__ == "__main__":
     plt.savefig(result_analysis_folder + date_time +"_predictions_scatter.png")
 
 
+# Compute average sizes for each encoding
+encodings = list(encoding_results.keys())
+avg_node_counts = []
+avg_node_feature_dims = []
+avg_edge_counts = []
+avg_edge_feature_dims = []
 
+for encoding in encodings:
+    df = encoding_results[encoding]
+    node_counts = []
+    node_feature_dims = []
+    edge_counts = []
+    edge_feature_dims = []
+    for x_size, edge_index_size, edge_attr_size in zip(
+        df['x_size'], df['edge_index_size'], df['edge_attr_size']
+    ):
+        if x_size is not None:
+            node_counts.append(x_size[0])
+            node_feature_dims.append(x_size[1])
+        if edge_index_size is not None:
+            # edge_index shape is [2, num_edges]
+            edge_counts.append(edge_index_size[1])
+        if edge_attr_size is not None:
+            # edge_attr shape is [num_edges, edge_feature_dim]
+            edge_feature_dims.append(edge_attr_size[1])
+    avg_node_counts.append(np.mean(node_counts))
+    avg_node_feature_dims.append(np.mean(node_feature_dims))
+    avg_edge_counts.append(np.mean(edge_counts))
+    avg_edge_feature_dims.append(np.mean(edge_feature_dims))
 
-
-# Create a dataframe to store encoding and dimensions for x, edge_index, and edge_attr
-encoding_dimensions = []
-
-for encoding in encoding_results:
-    for i in encoding_results[encoding]:
-        data = encoding_results[encoding][i]["data"]
-        # For nodes, get the number of nodes (first dimension of x)
-        num_nodes = data.x.size(0) if data.x is not None else 0
-        # For edges, take the number of edges from edge_index (should be on dimension 1)
-        num_edges = data.edge_index.size(1) if data.edge_index is not None else 0
-        # For edge features, get the size of the second dimension of edge_attr if available
-        edge_features = (
-            data.edge_attr.size(1)
-            if data.edge_attr is not None and len(data.edge_attr.size()) > 1
-            else 0
-        )
-        encoding_dimensions.append({
-            "encoding": encoding,
-            "num_nodes": num_nodes,
-            "num_edges": num_edges,
-            "edge_features": edge_features,
-        })
-
-# Convert the list to a pandas DataFrame
-df_enc = pd.DataFrame(encoding_dimensions)
-print(df_enc)
-
-# Group by encoding and compute the average values
-df_avg = df_enc.groupby("encoding").mean().reset_index()
-
-# Create a grouped bar plot to compare the average numbers
-labels = df_avg["encoding"]
-x = range(len(labels))
-width = 0.25
+# Create a bar chart comparing the average sizes for each encoding, including both node and edge features.
+x_pos = np.arange(len(encodings))
+bar_width = 0.20
 
 fig, ax = plt.subplots(figsize=(10, 6))
-ax.bar([p - width for p in x], df_avg["num_nodes"], width, label="Avg # Nodes")
-ax.bar(x, df_avg["num_edges"], width, label="Avg # Edges")
-ax.bar([p + width for p in x], df_avg["edge_features"], width, label="Avg Edge Features")
+bars1 = ax.bar(x_pos - 1.5 * bar_width, avg_node_counts, bar_width, label='Avg Nodes')
+bars2 = ax.bar(x_pos - 0.5 * bar_width, avg_node_feature_dims, bar_width, label='Avg Node Feature Dim')
+bars3 = ax.bar(x_pos + 0.5 * bar_width, avg_edge_counts, bar_width, label='Avg Edges')
+bars4 = ax.bar(x_pos + 1.5 * bar_width, avg_edge_feature_dims, bar_width, label='Avg Edge Feature Dim')
 
-ax.set_xlabel("Encoding")
-ax.set_ylabel("Average Count")
-ax.set_title("Comparison of Graph Structural Sizes Across Encodings")
-ax.set_xticks(x)
-ax.set_xticklabels(labels, rotation=45)
+ax.set_xlabel('Encodings')
+ax.set_ylabel('Average Size')
+ax.set_title('Comparison of Encoding Sizes')
+ax.set_xticks(x_pos)
+ax.set_xticklabels(encodings, rotation=45)
 ax.legend()
 
-plt.tight_layout()
-plt.savefig(result_analysis_folder + date_time + "_encoding sizes.png")
+# Annotate each bar with its height value.
+for bars in [bars1, bars2, bars3, bars4]:
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2, height, f'{height:.1f}',
+                ha='center', va='bottom')
 
-# Save the encoding sizes DataFrame to a CSV file
-csv_filename = os.path.join(result_analysis_folder, f"encoding_sizes_{date_time.replace(';', '_').replace(':', '-')}.csv")
-df_enc.to_csv(csv_filename, index=False)
-print(f"Encoding sizes CSV saved at: {csv_filename}")
+plt.tight_layout()
+plt.show()  # Display the graph
+
+from datetime import datetime
+now = datetime.today()
+date_time = now.strftime("%Y_%m_%d_%H%M%S_")
+plt.savefig(result_analysis_folder + date_time + "encoding_study.png")
+plt.close(fig)
