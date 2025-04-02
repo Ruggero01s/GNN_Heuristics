@@ -6,7 +6,7 @@ Tried multigraph and higher order variants of presented encodings, behavior is i
 
 GINE is hopeless... why?
 
-Trying to check GAT too: it works about as well as GEN, GEN is still slightly better, GAT doesn't like O2A encodings
+Trying to check GAT too: it works about as well as GEN, GEN is still slightly better, GAT doesn't like O2A encoding. Gen seems like the better choice in general.
 
 Seems that A2A and it's variants (multigraph and higher order) are the best, multigraph is a bit better on goal states
 Multigraph is having the features on different edge objects instead of stacking on the same (base version).
