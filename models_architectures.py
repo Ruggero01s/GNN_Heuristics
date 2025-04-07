@@ -94,7 +94,8 @@ class GINEModel(torch.nn.Module):
 class GENModel(torch.nn.Module):
     def __init__(self, node_in_dim, hidden_dim, output_dim, hidden_layers, fc_hidden_dim, 
                  num_edge_features, aggregation_function, readout, dropout_rate, training, 
-                 max_num_elements_mlp=0, hidden_channels_mlp=0, num_layers_mlp=0, hidden_channels_mlp_readout=0, num_layers_mlp_readout=0):
+                 max_num_elements_mlp=0, hidden_channels_mlp=0, num_layers_mlp=0, 
+                 hidden_channels_mlp_readout=0, num_layers_mlp_readout=0,):
         super(GENModel, self).__init__()
         # TOMOD attentional
         self.edge_transform = nn.Linear(num_edge_features, hidden_dim)
@@ -121,7 +122,7 @@ class GENModel(torch.nn.Module):
                 num_layers=num_layers_mlp_readout,
             )
         
-        kwargs = {}
+        kwargs = {"msg_norm":True, "learn_msg_scale":True}
         if aggregation_function == "softmax":
             kwargs['learn_t'] = True
         elif aggregation_function == "powermean":
@@ -138,7 +139,7 @@ class GENModel(torch.nn.Module):
                             max_num_elements=max_num_elements_mlp,
                             num_layers=num_layers_mlp, 
                             hidden_channels=hidden_channels_mlp,
-                            #norm=LayerNorm(hidden_dim)
+                            norm=LayerNorm(hidden_dim)
                             ), 
                         edge_dim=num_edge_features, 
                         **kwargs))
@@ -173,7 +174,7 @@ class GENModel(torch.nn.Module):
                                 max_num_elements=max_num_elements_mlp, 
                                 num_layers=num_layers_mlp, 
                                 hidden_channels=hidden_channels_mlp,
-                                #norm=LayerNorm(hidden_dim)
+                                norm=LayerNorm(hidden_dim)
                                 ), 
                             edge_dim=num_edge_features, 
                             **kwargs))
