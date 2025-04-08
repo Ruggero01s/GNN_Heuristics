@@ -139,7 +139,7 @@ class GENModel(torch.nn.Module):
                             max_num_elements=max_num_elements_mlp,
                             num_layers=num_layers_mlp, 
                             hidden_channels=hidden_channels_mlp,
-                            norm=LayerNorm(hidden_dim)
+                            #norm=LayerNorm(hidden_dim)
                             ), 
                         edge_dim=num_edge_features, 
                         **kwargs))
@@ -174,7 +174,7 @@ class GENModel(torch.nn.Module):
                                 max_num_elements=max_num_elements_mlp, 
                                 num_layers=num_layers_mlp, 
                                 hidden_channels=hidden_channels_mlp,
-                                norm=LayerNorm(hidden_dim)
+                                #norm=LayerNorm(hidden_dim)
                                 ), 
                             edge_dim=num_edge_features, 
                             **kwargs))

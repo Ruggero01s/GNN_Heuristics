@@ -73,7 +73,7 @@ def objective_GINEModel(trial, train_dataset, verbose=0, max_degree=-1):
                          #
                          ).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-        criterion = nn.L1Loss().to(device) #MAE
+        criterion = loss.to(device) #MAE
         # Train the model for this fold
         train_model(model, train_loader, optimizer, criterion, epochs, verbose)
         # Evaluate the model on the validation data
@@ -171,7 +171,7 @@ def objective_GENModel(trial, train_dataset, verbose=0, max_degree = -1):
                          training=True
                          ).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-        criterion = nn.L1Loss().to(device) #MAE
+        criterion = loss.to(device) #MAE
         # Train the model for this fold
         train_model(model, train_loader, optimizer, criterion, epochs, verbose)
         # Evaluate the model on the validation data
@@ -241,7 +241,7 @@ def objective_GAT(trial, train_dataset, verbose=0, max_degree = -1):
                          #
                          ).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-        criterion = nn.L1Loss().to(device) #MAE
+        criterion = loss.to(device)
         # Train the model for this fold
         train_model(model, train_loader, optimizer, criterion, epochs, verbose)
         # Evaluate the model on the validation data

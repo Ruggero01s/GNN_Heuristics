@@ -378,7 +378,7 @@ if __name__ == "__main__":
                     #
                 ).to(device)
             optimizer = torch.optim.Adam(model.parameters(), lr=best_trial.params["lr"])
-            criterion = nn.L1Loss().to(device)
+            criterion = loss.to(device)
             # training del modello
             trained_model = train_model(
                 model, train_loader, optimizer, criterion, epochs, verbose=1

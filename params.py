@@ -1,5 +1,7 @@
+from torch import nn
 seed = 42
 epochs = 70
+loss = nn.MSELoss()
 patience = 5  # Patience for early stopping
 encodings_list = [
      "Object2ObjectGraph",
@@ -14,14 +16,14 @@ encodings_list = [
 domain_folder_root = "./data/"  # Path to the folder where are stored the subfolders for the data of each domain
 predictions_folder_root = "./predictions/"  # Path to the folder where will be saved the predictions of each domain
 
-domain = "sokoban"  # Dominio di cui fare l'encoding
+domain = "logistics"  # Dominio di cui fare l'encoding
 domain_folder = (
     domain_folder_root + domain + "/"
 )  # Percorso in cui sono memroizzati i plan.txt del dominio
 
 # Dizionari che specificano per ogni tipologia di encoding il relativo objective e il numero di trials di optuna
 # (in questo modo posso dare n_trials diversi per tipologia di encoding)
-trials = {"GENModel": 50, "GINEModel": 0, "GATModel": 0}
+trials = {"GENModel": 50, "GINEModel": 50, "GATModel": 50}
 models = ["GENModel", "GINEModel", "GATModel"]  # Models to use for the encoding
 result_analysis_folder = f"./results_analysis/{domain.upper()}/"
 predictions_folder = predictions_folder_root + domain.upper() + "/"

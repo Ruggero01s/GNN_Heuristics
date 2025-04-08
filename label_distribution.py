@@ -3,6 +3,8 @@ from collections import Counter
 import os
 import csv
 
+from params import *
+
 labels_dict = {}
 
 def parse_file(file_path):
@@ -36,10 +38,10 @@ def plot_histogram():
     plt.bar(sorted_labels, frequencies, align='center', color='red')
     plt.xlabel('Label')
     plt.ylabel('Frequency')
-    plt.title('Histogram of Label Distribution')
+    plt.title(f'Histogram of {domain} Label Distribution')
     
-    os.makedirs('results_analysis/SOKOBAN', exist_ok=True)
-    with open('results_analysis/SOKOBAN/label_distribution.csv', 'w', newline='') as csvfile:
+    os.makedirs(f'results_analysis/{domain.upper()}', exist_ok=True)
+    with open(f'results_analysis/{domain.upper()}/label_distribution.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['Label', 'Frequency'])
         for label in sorted_labels:
@@ -52,10 +54,10 @@ def plot_histogram():
     for label, count in top_labels:
         print(f"Label {label}: {count}")
 
-    plt.savefig('results_analysis/SOKOBAN/label_distribution_histogram.png')
+    plt.savefig(f'results_analysis/{domain.upper()}/label_distribution_histogram.png')
 
 def main():
-    directory_path = "data/sokoban"
+    directory_path = f"data/{domain}/"  # Directory to search}"
     for file in os.listdir(directory_path):
         if file.endswith(".txt"):
             full_file_path = os.path.join(directory_path, file)
